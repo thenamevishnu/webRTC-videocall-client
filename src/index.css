@@ -5,3 +5,7 @@ body{
     background: #eee;
     font-family: "Parkinsans", serif;
 }
+
+.scroll-none::-webkit-scrollbar{
+    display: none;
+}

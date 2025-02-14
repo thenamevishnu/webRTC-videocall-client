@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { IoCallOutline } from "react-icons/io5";
 import { FaMicrophone, FaMicrophoneSlash, FaVideo, FaVideoSlash } from "react-icons/fa";
 import { useSelector } from "react-redux"
+import { MdOutlineMessage } from "react-icons/md";
+import { Chat } from "../Components/Chat";
 
 const servers = {
     iceServers: [
@@ -17,14 +19,15 @@ export const VideoCall = () => {
 
     const { email, name, picture } = useSelector(state => state.user)   
     const { room_id } = useParams();
-    const { socket, setOpponent } = useSocket();
+    const { socket, opponent, setOpponent } = useSocket();
     const localStream = useRef(null);
     const localVideo = useRef(null);
     const remoteStream = useRef(null);
     const remoteVideo = useRef(null);
     const peerConnection = useRef(null);
     const [isVideoEnabled, setIsVideoEnabled] = useState(true);
-    const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+    const [isAudioEnabled, setIsAudioEnabled] = useState(false);
+    const [isMessageOpen, setMessageOpen] = useState(false)
 
     if (!email || !room_id) {
         return <Navigate to="/" />;
@@ -78,6 +81,7 @@ export const VideoCall = () => {
 
     const handleUserConnected = (data) => {
         setOpponent(data);
+        socket.emit("max-user-connected", { email, name, picture, room_id });
     };
 
     const createAnswer = async (offer) => {
@@ -143,6 +147,9 @@ export const VideoCall = () => {
                 remoteStream.current.getTracks().forEach(track => track.stop())
                 location.href = "/"
             })
+            socket.on("max_user_reached", data => {
+                setOpponent(data)
+            })
         }
     }, [socket]);
 
@@ -183,21 +190,31 @@ export const VideoCall = () => {
         }
     }
 
+    const handleMessage = () => {
+        setMessageOpen(isOpen => !isOpen)
+    }
+
     return (
         <div>
-            <div className="p-2 relative flex justify-center">
-                <video ref={remoteVideo} autoPlay className="w-full -scale-x-[1] rounded-xl max-w-[1200px] bg-black h-[85vh] object-cover" />
-                <video ref={localVideo} autoPlay className={`w-full -scale-x-[1] max-w-44 rounded-xl h-28 bg-[#222] object-cover absolute top-2 right-2`} />
-            </div>
-            <div className="flex justify-center gap-3 items-center">
-                <div onClick={toggleMic} className="bg-violet-700 p-3 cursor-pointer text-white rounded-xl text-xl">
-                    {isAudioEnabled ? <FaMicrophone /> : <FaMicrophoneSlash />}
-                </div>
-                <div onClick={toggleVideo} className="bg-violet-700 p-3 cursor-pointer text-white rounded-xl text-xl">
-                    {isVideoEnabled ? <FaVideo /> : <FaVideoSlash />}
-                </div>
-                <div onClick={handleEndCall} className="bg-red-500/80 p-3 cursor-pointer text-white rounded-xl text-xl">
-                    <IoCallOutline />
+            <div className="p-2 relative flex justify-center h-screen w-full">
+                <Chat isOpen={isMessageOpen} />
+                <video ref={remoteVideo} autoPlay className="-scale-x-[1] rounded-xl w-full bg-black object-contain h-full" />
+                {!opponent && <div className="text-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">Waiting for opponent...</div>}
+                <video ref={localVideo} autoPlay className={`w-full -scale-x-[1] max-w-44 rounded-xl h-28 bg-[#222] object-cover absolute top-4 right-4`} />
+                
+                <div className="flex justify-center gap-3 items-center absolute bottom-3 ">
+                    <div onClick={toggleMic} className="bg-violet-700 p-3 cursor-pointer text-white rounded-xl text-xl">
+                        {isAudioEnabled ? <FaMicrophone /> : <FaMicrophoneSlash />}
+                    </div>
+                    <div onClick={toggleVideo} className="bg-violet-700 p-3 cursor-pointer text-white rounded-xl text-xl">
+                        {isVideoEnabled ? <FaVideo /> : <FaVideoSlash />}
+                    </div>
+                    <div onClick={handleMessage} className="bg-red-500/80 p-3 cursor-pointer text-white rounded-xl text-xl">
+                        <MdOutlineMessage />
+                    </div>
+                    <div onClick={handleEndCall} className="bg-red-500/80 p-3 cursor-pointer text-white rounded-xl text-xl">
+                        <IoCallOutline />
+                    </div>
                 </div>
             </div>
         </div>
