@@ -26,7 +26,7 @@ export const VideoCall = () => {
     const remoteVideo = useRef(null);
     const peerConnection = useRef(null);
     const [isVideoEnabled, setIsVideoEnabled] = useState(true);
-    const [isAudioEnabled, setIsAudioEnabled] = useState(false);
+    const [isAudioEnabled, setIsAudioEnabled] = useState(true);
     const [isMessageOpen, setMessageOpen] = useState(false)
 
     if (!email || !room_id) {
