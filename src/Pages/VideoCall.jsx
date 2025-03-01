@@ -6,6 +6,7 @@ import { FaMicrophone, FaMicrophoneSlash, FaVideo, FaVideoSlash } from "react-ic
 import { useSelector } from "react-redux"
 import { MdOutlineMessage } from "react-icons/md";
 import { Chat } from "../Components/Chat";
+import { toast } from "react-toastify";
 
 const servers = {
     iceServers: [
@@ -110,14 +111,18 @@ export const VideoCall = () => {
     };
 
     const handleEndCall = async () => {
-        if(peerConnection.current) {
-            await peerConnection.current.close()
+        try {
+            if(peerConnection.current) {
+                await peerConnection.current.close()
+            }
+            setOpponent(null);
+            localStream.current.getTracks().forEach(track => track.stop())
+            remoteStream.current.getTracks().forEach(track => track.stop())
+            socket.emit("end_call", { email, name, picture, room_id });
+            location.href = "/"
+        } catch (err) {
+            location.href = "/"
         }
-        setOpponent(null);
-        localStream.current.getTracks().forEach(track => track.stop())
-        remoteStream.current.getTracks().forEach(track => track.stop())
-        socket.emit("end_call", { email, name, picture, room_id });
-        location.href = "/"
     };
 
     useEffect(() => {
@@ -171,13 +176,21 @@ export const VideoCall = () => {
         })();
     }, []);
 
-    const toggleMic = () => {
+    const toggleMic = async () => {
+        const audioPermission = await navigator.permissions.query({ name: "microphone" })
+        if (audioPermission.state == "denied") {
+            return toast.error("Please allow access to microphone")
+        }
         const audioTrack = localStream.current.getAudioTracks()[0];
         audioTrack.enabled = !audioTrack.enabled
         setIsAudioEnabled(audioTrack.enabled)
     }
 
-    const toggleVideo = () => {
+    const toggleVideo = async () => {
+        const videoPermission = await navigator.permissions.query({ name: "camera" })
+        if (videoPermission.state == "denied") {
+            return toast.error("Please allow access to camera")
+        }
         const videoTrack = localStream.current.getVideoTracks()[0];
         videoTrack.enabled = !videoTrack.enabled
         setIsVideoEnabled(videoTrack.enabled)
